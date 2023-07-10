@@ -253,11 +253,12 @@
 
      `conda activate pytorch`
 
-5. 安装pytorch，pytorch官网 https://pytorch.org
+5. 安装pytorch1.9.1，pytorch官网 https://pytorch.org/get-started/previous-versions/
 
      ![anaconda-install](./images/pytorch1.png)
 
-     `conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia`
+     `conda install pytorch==1.9.1 torchvision==0.10.1 torchaudio==0.9.1 cudatoolkit=10.2 -c pytorch
+`
 
      - 输入y确认安装
 
@@ -312,7 +313,130 @@
 
      `labelImg`
 
-## 8.yolov5项目
+
+## 8.yolov5项目(训练模型)
+
+1. 克隆yolov5-5.0
+
+     `git clone -b v5.0 https://github.com/ultralytics/yolov5.git`
+
+2. 进入目录
+
+     `cd yolov5`
+
+3. 切换环境
+
+     `conda activate pytorch`
+
+4. 安装依赖
+
+     `pip install -r ./requirements.txt`
+
+5. 防止训练时可能会出现的问题
+
+     `pip uninstall setuptools`
+
+     `pip install setuptools==56.1.0`
+
+     `pip uninstall numpy`
+
+     `pip install numpy==1.23`
+
+### 训练自己的模型
+
+1. 在data目录下创建项目目录
+
+     ![tensorrtx-install](./images/yolov51.png)
+
+     cat-dog为项目名称，images用来存放图片，labels用来存放标签
+
+2. 在data目录下创建.yaml文件
+
+     ```yaml
+     # 将train和val改为自己项目中图片的路径
+     train: /home/lxy/Documents/yolov5/data/traffic/images/train
+     val: /home/lxy/Documents/yolov5/data/traffic/images/val
+
+     # 类别个数
+     nc: 5
+
+     # 类别名称列表
+     names: ['limit_50','limit_10','green_light','yellow_light','red_light']
+     ```
+
+3. 回到yolov5目录修改models目录下的yolov5s.yaml文件
+
+     ![tensorrtx-install](./images/yolov52.png)
+
+     将nc改为你自己的类型个数
+
+4. 开始训练
+
+     - 切换到pytorch环境`conda activate pytorch`
+     `python train.py --batch-size 16 --epochs 1000 --cfg ./models/yolov5s.yaml --data ./data/你创建的yaml文件`
+     - --batch-size 越大显存要求就越大，按计算机性能定
+     - --epochs 训练的轮数
+     - --cfg 要用到的模型配置文件
+     - --data 要用到的数据文件
+     
+     训练结果存放在yolov5目录下的runs/train目录中
+     best.pt为最好的模型，last.pt为最后训练的模型
+
+5. 模型的预测
+
+     - `python detect.py --weights 你训练的模型.pt --source 图片路径或图片目录路径、视频路径、0为摄像头`
+     - 预测结果在yolov5目录下runs/detect目录中
+
+
+## 9.Tensorrtx项目(推理加速)
+
+1. 克隆Tensorrtx-yolov5-v5.0 
+
+     `git clone -b yolov5-v5.0 https://github.com/wang-xinyu/tensorrtx.git`
+
+     进入目录
+
+     `cd tensorrtx-yolov5-v5.0/yolov5/`
+
+
+2. 转换为wts文件
+
+     - 复制`gen_wts.py`到yolov5目录下
+     - 切换到pytorch环境`conda activate pytorch`
+     - 进行转换`python gen_wts.py -w ./weights/best.pt -o best.wts`
+     - 将转换好的wts文件复制到tensorrtx/yolov5目录下
+
+3. 修改CMakeLists.txt文件
+
+     ![tensorrtx-install](./images/tensorrtx1.png)
+     修改tensorrt为自己的安装位置
+
+
+4. 修改`yololayer.h`文件
+
+
+     ![tensorrtx-install](./images/tensorrtx2.png)
+
+     static constexpr int CLASS_NUM = 80;将80改成自己的类别数目
+
+
+5. 编译
+
+     `mkdir build`
+
+     `cd build`
+
+     `make -j16`
+
+6. 转换成engine格式
+
+     `./yolov5 -s ../best.wts ./best.engine s`
+
+7. 使用engine模型预测
+
+     - 将上级目录下的yolov3-sp中samples文件夹复制到yolov5目录
+
+     `./yolov5 -d best.engine ../samples`
 
 
 
